@@ -2,8 +2,24 @@
 
 import { z } from 'zod';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase/server';
+import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { revalidatePath } from 'next/cache';
+
+// This is a temporary solution. In a real app, you'd want to initialize this only once.
+if (!getApps().some(app => app.name === 'admin-server-actions')) {
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    : undefined;
+
+    if (serviceAccount) {
+        initializeApp({
+            credential: cert(serviceAccount),
+        }, 'admin-server-actions');
+    }
+}
+
+const db = getFirestore(getApps().find(app => app.name === 'admin-server-actions'));
 
 const biodataSchema = z.object({
   nama: z.string().min(1, 'Nama wajib diisi'),
@@ -51,6 +67,7 @@ export async function submitSurvey(data: unknown) {
       ...parsed.data,
       createdAt: serverTimestamp(),
     };
+    // Note: Firestore Admin SDK is used here, so client-side non-blocking logic doesn't apply
     await addDoc(collection(db, 'surveys'), docData);
     
     // Revalidate admin path to show new data

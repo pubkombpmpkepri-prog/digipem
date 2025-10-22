@@ -1,8 +1,21 @@
-import { collection, getDocs, orderBy, query } from 'firebase-admin/firestore';
-import { db } from '@/lib/firebase/server'; // Use server for RSC
+import { getFirestore, collection, getDocs, orderBy, query, Timestamp } from 'firebase/firestore';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { SurveyDocument, SurveySubmission } from '@/types/survey';
 import DashboardClient from '@/components/dashboard/dashboard-client';
-import { Timestamp } from 'firebase-admin/firestore';
+
+// This is a temporary solution. In a real app, you'd want to initialize this only once.
+if (!getApps().some(app => app.name === 'admin-rsc')) {
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    : undefined;
+
+    if (serviceAccount) {
+        initializeApp({
+            credential: cert(serviceAccount),
+        }, 'admin-rsc');
+    }
+}
+const db = getFirestore(getApps().find(app => app.name === 'admin-rsc'));
 
 // Helper to convert Firestore Timestamps to serializable strings in a deeply nested object
 function convertTimestamps<T>(obj: T): T {

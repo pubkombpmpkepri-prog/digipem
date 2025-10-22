@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { GraduationCap, LogOut, ShieldCheck } from 'lucide-react';
 import {
@@ -16,10 +15,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useEffect, useState } from 'react';
+import { ALLOWED_ADMIN_EMAILS } from '@/config/admin';
+
 
 export default function Header() {
-  const { user, isAdmin } = useAuth();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+        const checkAdmin = async () => {
+            const idTokenResult = await user.getIdTokenResult();
+            if(idTokenResult.claims.admin === true || (user.email && ALLOWED_ADMIN_EMAILS.includes(user.email))) {
+                setIsAdmin(true);
+            } else {
+                setIsAdmin(false);
+            }
+        };
+        checkAdmin();
+    } else {
+        setIsAdmin(false);
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -91,6 +111,7 @@ export default function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
+             !isUserLoading &&
              <Button
               variant="outline"
               size="sm"

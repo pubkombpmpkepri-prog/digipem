@@ -1,31 +1,60 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Chrome } from 'lucide-react';
+import { ALLOWED_ADMIN_EMAILS } from '@/config/admin';
 
 export default function LoginPage() {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
 
   useEffect(() => {
-    if (!loading && user && isAdmin) {
-      router.push('/admin');
+    if (isUserLoading) return;
+
+    if (!user) {
+      setIsCheckingAdmin(false);
+      return;
     }
-  }, [user, isAdmin, loading, router]);
+    
+    const checkAdminStatus = async () => {
+        try {
+            const idTokenResult = await user.getIdTokenResult();
+            const userIsAdmin =
+            idTokenResult.claims.admin === true ||
+            (user.email && ALLOWED_ADMIN_EMAILS.includes(user.email));
+            
+            setIsAdmin(userIsAdmin);
+
+            if (userIsAdmin) {
+                router.push('/admin');
+            }
+        } catch (error) {
+             console.error("Error checking admin status:", error);
+             // Stay on login page if admin check fails
+        } finally {
+            setIsCheckingAdmin(false);
+        }
+    };
+    
+    checkAdminStatus();
+
+  }, [user, isUserLoading, router]);
 
   const handleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener in AuthProvider will handle the redirect
+      // The useEffect will handle the redirect after state change
     } catch (error) {
       console.error('Error signing in with Google: ', error);
       toast({
@@ -36,7 +65,7 @@ export default function LoginPage() {
     }
   };
   
-  if (loading || (user && isAdmin)) {
+  if (isUserLoading || isCheckingAdmin || isAdmin) {
     return <div className="flex h-[80vh] items-center justify-center">Memuat...</div>;
   }
 

@@ -4,13 +4,17 @@ import { ColumnDef } from '@tanstack/react-table';
 import { SurveyDocument } from '@/types/survey';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
+
 
 export const columns: ColumnDef<SurveyDocument>[] = [
   {
     accessorKey: 'createdAt',
     header: 'Tanggal',
     cell: ({ row }) => {
-        const date = row.original.createdAt?.toDate();
+        const createdAt = row.original.createdAt;
+        // The data from RSC is serialized, so Timestamp becomes a string.
+        const date = createdAt ? new Date(createdAt as any) : null;
         return date ? format(date, 'dd MMM yyyy, HH:mm') : 'N/A';
     },
   },
