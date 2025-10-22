@@ -5,8 +5,8 @@ import Header from '@/components/layout/header';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'Sekolah Digital - Survei Digitalisasi',
-  description: 'Survei untuk mengukur tingkat digitalisasi sekolah.',
+  title: 'Sekolah Digital - Survei Digitalisasi Pembelajaran',
+  description: 'Survei untuk mengukur tingkat digitalisasi pembelajaran di sekolah.',
 };
 
 export default function RootLayout({

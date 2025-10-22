@@ -6,7 +6,7 @@ export default function Home() {
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <header className="mb-8 text-center">
         <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">
-          Survei Digitalisasi Sekolah
+          Survei Digitalisasi Pembelajaran
         </h1>
         <p className="mt-2 text-lg text-muted-foreground">
           Bantu kami memetakan tingkat kesiapan digital sekolah Anda.
