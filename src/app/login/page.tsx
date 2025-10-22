@@ -21,14 +21,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // The AdminLayout will handle redirection for logged-in admins.
-  // This useEffect will redirect any logged-in NON-admin user away from the login page
-  // to prevent confusion.
+  // This useEffect redirects a logged-in user to the admin page
+  // if they try to access the login page again.
   useEffect(() => {
     if (!isUserLoading && user) {
-      // Check if the user is already on the admin page to avoid loops
-      // Or just redirect to home and let them click the admin link
-      router.replace('/');
+      router.replace('/admin');
     }
   }, [user, isUserLoading, router]);
 
