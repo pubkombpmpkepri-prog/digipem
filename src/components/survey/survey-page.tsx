@@ -17,8 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AnswerChoice, FinalLevelResult } from '@/types/survey';
 import ThankYouMessage from './thank-you';
 
-import { useAuth, useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { signInAnonymously } from 'firebase/auth';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 
@@ -41,7 +40,6 @@ export default function SurveyPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
   
-  const auth = useAuth();
   const firestore = useFirestore();
 
   const methods = useForm<SurveyFormData>({
@@ -100,7 +98,7 @@ export default function SurveyPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
-    if (!auth || !firestore) {
+    if (!firestore) {
         toast({
             variant: 'destructive',
             title: 'Gagal Mengirim',
@@ -111,10 +109,6 @@ export default function SurveyPage() {
     }
 
     try {
-        if (!auth.currentUser) {
-            await signInAnonymously(auth);
-        }
-
         const formData = methods.getValues();
         const finalLevel = calculateFinalLevel(formData.answers);
         const perQuestionFeedback = formData.answers.map((choice, index) => {
@@ -170,7 +164,7 @@ export default function SurveyPage() {
           });
 
     } catch (error) {
-        // This will catch errors from signInAnonymously or data preparation
+        // This will catch errors from data preparation
         console.error('Error during submission preparation: ', error);
         toast({
             variant: 'destructive',
