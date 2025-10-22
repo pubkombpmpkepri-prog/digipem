@@ -1,46 +1,52 @@
 /**
- * @fileoverview Firestore Security Rules for the survey application.
+ * @fileoverview Firestore Security Rules for the Survey App.
  *
  * Core Philosophy:
- * This ruleset restricts read access to the `surveys` collection to authenticated users with a specific email.
- * Write access is denied to all users.
+ * This ruleset enforces a role-based access control model, specifically using an email allowlist, for the 'surveys' collection.
+ * Only authenticated users with emails present in the allowlist can create, read, update, or delete survey documents.
  *
  * Data Structure:
- * The primary data is stored in the `/surveys/{docId}` collection.
+ * All survey data is stored in a flat `surveys` collection at the root level.
  *
  * Key Security Decisions:
- * - Listing surveys is only allowed for specific users.
- * - Data validation is relaxed in this prototype to allow for rapid schema iteration.
- *
- * Denormalization for Authorization: N/A, email domain is used for authorization.
- * Structural Segregation: N/A
+ * - Surveys are only accessible to members of the email allowlist.
+ * - Data validation focuses on authorization-critical fields only, not on the entire schema.
+ * - The rules strictly prevent any access to other users.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants read access to the `surveys` collection only to specific authenticated users.
+     * @description Controls access to the 'surveys' collection. Only users in the email allowlist can create, read, update or delete surveys.
      * @path /databases/{database}/documents/surveys/{docId}
-     * @allow (get, list) User with allowed email can read surveys.
-     *     Example: User with email 'apkelana@gmail.com' can get a survey.
-     * @deny (get, list) User without allowed email cannot read surveys.
-     *     Example: User with email 'outsider@example.com' cannot get a survey.
-     * @deny (create, update, delete) No user can create, update, or delete surveys.
-     * @principle Restricts read access to authorized users and prohibits any write access.
+     * @allow (create) - Authenticated user with email apkelana@gmail.com can create a survey document.
+     * @deny (create) - Authenticated user with email not in the allowlist cannot create a survey document.
+     * @allow (get) - Authenticated user with email apkelana@gmail.com can get a survey document.
+     * @deny (get) - Authenticated user with email not in the allowlist cannot get a survey document.
+     * @allow (list) - Authenticated user with email apkelana@gmail.com can list survey documents.
+     * @deny (list) - Authenticated user with email not in the allowlist cannot list survey documents.
+     * @allow (update) - Authenticated user with email apkelana@gmail.com can update a survey document.
+     * @deny (update) - Authenticated user with email not in the allowlist cannot update a survey document.
+     * @allow (delete) - Authenticated user with email apkelana@gmail.com can delete a survey document.
+     * @deny (delete) - Authenticated user with email not in the allowlist cannot delete a survey document.
+     * @principle Enforces role-based access control using an email allowlist for all survey operations.
      */
     match /surveys/{docId} {
-      allow get: if isSignedIn() && request.auth.token.email == 'apkelana@gmail.com';
-      allow list: if isSignedIn() && request.auth.token.email == 'apkelana@gmail.com';
-
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get: if isSignedIn() && isAllowedEmail(request.auth.token.email);
+      allow list: if isSignedIn() && isAllowedEmail(request.auth.token.email);
+      allow create: if isSignedIn() && isAllowedEmail(request.auth.token.email);
+      allow update: if isSignedIn() && isAllowedEmail(request.auth.token.email) && resource != null;
+      allow delete: if isSignedIn() && isAllowedEmail(request.auth.token.email) && resource != null;
     }
-  }
 
-  // Helper function to check if a user is signed in.
-  function isSignedIn() {
-    return request.auth != null;
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAllowedEmail(email) {
+        return email == 'apkelana@gmail.com';
+    }
   }
 }
