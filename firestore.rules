@@ -2,62 +2,40 @@
  * @fileoverview Firestore Security Rules for the survey application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict admin-only access model for survey data.
- * Only users with the "admin" custom claim can read or write survey documents.
+ * This ruleset restricts read access to the `surveys` collection to authenticated users with a specific email.
+ * All write access is denied.
  *
  * Data Structure:
- * Survey data is stored in the `/surveys/{docId}` collection.
+ * - /surveys/{docId}: Stores survey data.
  *
  * Key Security Decisions:
- * - Access to read survey data is restricted to users with the "admin" custom claim.
- * - Write access (create, update, delete) is also restricted to users with the "admin" custom claim.
- * - Data validation is limited to authorization checks, focusing on verifying admin status before write operations.
- * - No data shape validation (schema) is performed in this prototyping phase to allow for faster iteration.
- * - Listing is also denied to non-admins since this would reveal the existance of data.
- *
- * Denormalization for Authorization:
- * This ruleset relies on the presence of the "admin" custom claim in the user's authentication token to make authorization decisions. No denormalization is required in the documents themselves.
- *
- * Structural Segregation:
- * All survey data is stored in a single collection (`/surveys/{docId}`) with access controlled by the "admin" custom claim. There is no need for separate public and private collections.
+ * - Only users with a specific email are allowed to list or get surveys.
+ * - All write operations (create, update, delete) on surveys are denied.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Secures the /surveys/{docId} collection, allowing only admins to read, create, update, and delete survey documents.
+     * @description Only admins can read surveys.
      * @path /surveys/{docId}
-     * @allow (get, list) User with "admin" claim can read the survey.
-     * @allow (create, update, delete) User with "admin" claim can modify survey data.
-     * @deny (get, list) User without "admin" claim cannot access any survey data.
-     * @deny (create, update, delete) User without "admin" claim cannot modify survey data.
-     * @principle Enforces admin-only access for all operations on survey documents.
+     * @allow (get, list) User with allowed email can read survey data.
+     *          e.g., request.auth.token.email == "apkelana@gmail.com"
+     * @deny (get, list) User without allowed email.
+     *          e.g., request.auth.token.email != "apkelana@gmail.com"
+     * @deny (create, update, delete) All write operations are denied.
+     * @principle Restricts read access to a specific email. Denies all writes.
      */
     match /surveys/{docId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow get: if isSignedIn() && request.auth.token.email == "apkelana@gmail.com";
+      allow list: if isSignedIn() && request.auth.token.email == "apkelana@gmail.com";
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
+  }
 
-    // --- Helper Functions ---
-
-    /**
-     * @description Checks if the user is signed in.
-     * @return True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the user has the "admin" custom claim.
-     * @return True if the user has the "admin" claim, false otherwise.
-     */
-    function isAdmin() {
-      return isSignedIn() && request.auth.token.admin == true;
-    }
+  function isSignedIn() {
+    return request.auth != null;
   }
 }
