@@ -12,10 +12,13 @@ export const columns: ColumnDef<SurveyDocument>[] = [
     accessorKey: 'createdAt',
     header: 'Tanggal',
     cell: ({ row }) => {
-        const createdAt = row.original.createdAt;
-        // The data from RSC is serialized, so Timestamp becomes a string.
-        const date = createdAt ? new Date(createdAt as any) : null;
-        return date ? format(date, 'dd MMM yyyy, HH:mm') : 'N/A';
+        const createdAt = row.original.createdAt as Timestamp;
+        // When using the Firebase client SDK, createdAt is a Firestore Timestamp object.
+        // We need to convert it to a JavaScript Date object before formatting.
+        if (createdAt && typeof createdAt.toDate === 'function') {
+          return format(createdAt.toDate(), 'dd MMM yyyy, HH:mm');
+        }
+        return 'N/A';
     },
   },
   {
