@@ -1,60 +1,42 @@
 /**
- * @fileOverview Firestore Security Rules for the survey application.
+ * @fileOverview Firestore Security Rules for the survey app.
  *
  * Core Philosophy:
- * This ruleset allows anyone to submit survey data, but restricts access to reading survey data to only authenticated administrators.
+ * This ruleset restricts listing surveys to authenticated users with the email "admin@example.com", effectively providing administrator-level access.  All other users are denied list access. Get access is intentionally left open to facilitate debugging. Write access is denied for all users to prevent data modification during this prototyping phase.
  *
  * Data Structure:
- * All survey data is stored in the top-level `/surveys` collection.  Each document represents a single survey submission.
+ * Data is stored in a flat `/surveys/{surveyId}` collection.
  *
  * Key Security Decisions:
- * - Anyone can create survey submissions (public writes).
- * - Only authenticated administrators can read survey submissions.
- * - Listing surveys is restricted to administrators.
- * - Data validation is limited to authorization-critical fields (none in this version).
- *
- * Denormalization for Authorization:
- * Not applicable in this simplified model, but consider adding an `adminEmails` array to a config doc to avoid hardcoding emails in rules.
- *
- * Structural Segregation:
- * Not applicable as all survey data is stored in a single collection with public write access.
+ * - Listing surveys is restricted to an admin user (email address allowlist).
+ * - All write access is denied.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows anyone to create survey submissions, but restricts reading to authenticated administrators.
-     * @path /surveys/{docId}
-     * @allow (create) - Any user can submit a survey.
-     * @allow (get, list) - Only admins can read survey data.
-     * @deny (get, list) - Non-admins cannot read survey data.
-     * @deny (update, delete) - No one can update or delete survey data (for now).
-     * @principle Allows public submissions while restricting data access to admins.
+     * @description Restricts access to the /surveys collection. Only allows authenticated admin users to list surveys.
+     * @path /surveys/{surveyId}
+     * @allow (list) User with email "admin@example.com" can list surveys.
+     * @deny (list) Any other user attempting to list surveys.
+     * @deny (create, update, delete) All users are denied write access.
+     * @principle Restricts access to the surveys collection to admin users.
      */
-    match /surveys/{docId} {
-      // Allow anyone to create a survey
-      allow create: if true;
-
-      // Only allow admins to read survey data
-      allow get, list: if isAdmin();
-
-      // No updates or deletes are allowed
-      allow update, delete: if false;
+    match /surveys/{surveyId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
 
-    /**
-     * @description Checks if the user is an authenticated administrator.
-     * @returns {boolean} True if the user is an admin, false otherwise.
-     */
+    // Helper function to check if the user is an admin based on their email.
     function isAdmin() {
-      return isSignedIn() && (request.auth.token.email == "admin@example.com");
+      return isSignedIn() && request.auth.token.email == "admin@example.com";
     }
 
-    /**
-     * @description Checks if a user is signed in.
-     * @returns {boolean} True if the user is signed in, false otherwise.
-     */
+    // Helper function to check if the user is signed in.
     function isSignedIn() {
       return request.auth != null;
     }
