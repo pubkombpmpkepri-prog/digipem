@@ -2,6 +2,7 @@
 // This provides a simple, first-layer of security. For a more robust solution, use custom claims.
 
 export const ALLOWED_ADMIN_EMAILS = [
+  "admin@sekolahdigital.com",
   "admin1@bpmpkepri.go.id",
   "admin2@bpmpkepri.go.id",
   "test.admin@example.com", // Add your test admin email here
