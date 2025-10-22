@@ -13,6 +13,3 @@ export default async function AdminPage() {
         </div>
     );
 }
-
-// Ensure dynamic rendering just in case, but data fetching is now client-side
-export const dynamic = 'force-dynamic';
