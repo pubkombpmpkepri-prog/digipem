@@ -43,7 +43,7 @@ export default function Header() {
       <div className="container flex h-16 items-center">
         <Link href="/" className="mr-auto flex items-center gap-2">
           <span className="font-headline text-xl font-bold text-primary">
-            Digitalisasi Pembelajaran
+            Provinsi Kepulauan Riau
           </span>
         </Link>
         <nav className="flex items-center gap-4">
