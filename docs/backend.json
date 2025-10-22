@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "Survey": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Survey",
+      "type": "object",
+      "description": "Represents a survey submission from a school.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the survey submission."
+        },
+        "biodata": {
+          "type": "string",
+          "description": "Reference to Biodata entity. (Relationship: Survey 1:1 Biodata)"
+        },
+        "answers": {
+          "type": "array",
+          "description": "Array of answers (A, B, C, D) to the survey questions.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "perQuestionFeedback": {
+          "type": "array",
+          "description": "Array of feedbacks based on each question.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "finalLevel": {
+          "type": "string",
+          "description": "Reference to FinalLevel entity. (Relationship: Survey 1:1 FinalLevel)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the survey was submitted.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "biodata",
+        "answers",
+        "perQuestionFeedback",
+        "finalLevel",
+        "createdAt"
+      ]
+    },
+    "Biodata": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Biodata",
+      "type": "object",
+      "description": "Represents the biodata of the survey taker (school information).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the biodata information."
+        },
+        "nama": {
+          "type": "string",
+          "description": "Name of the survey taker (school representative)."
+        },
+        "sekolah": {
+          "type": "string",
+          "description": "Name of the school."
+        },
+        "npsn": {
+          "type": "string",
+          "description": "National School Identification Number (NPSN).",
+          "format": "string"
+        }
+      },
+      "required": [
+        "id",
+        "nama",
+        "sekolah",
+        "npsn"
+      ]
+    },
+    "PerQuestionFeedback": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PerQuestionFeedback",
+      "type": "object",
+      "description": "Represents the feedback provided for each question based on the selected answer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the feedback entry."
+        },
+        "surveyId": {
+          "type": "string",
+          "description": "Reference to Survey. (Relationship: Survey 1:N PerQuestionFeedback)"
+        },
+        "questionId": {
+          "type": "string",
+          "description": "Identifier for the question (e.g., Q1, Q2)."
+        },
+        "choice": {
+          "type": "string",
+          "description": "The selected choice (A, B, C, or D)."
+        },
+        "feedback": {
+          "type": "string",
+          "description": "The feedback text associated with the selected choice."
+        }
+      },
+      "required": [
+        "id",
+        "surveyId",
+        "questionId",
+        "choice",
+        "feedback"
+      ]
+    },
+    "FinalLevel": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FinalLevel",
+      "type": "object",
+      "description": "Represents the final assessment level and associated characteristics/recommendations.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the final level assessment."
+        },
+        "key": {
+          "type": "string",
+          "description": "The level key (A, B, C, or D)."
+        },
+        "level": {
+          "type": "string",
+          "description": "The level description (e.g., Tingkat Dasar)."
+        },
+        "characteristic": {
+          "type": "string",
+          "description": "A description of the characteristics of this level."
+        },
+        "recommendation": {
+          "type": "string",
+          "description": "The final recommendation text for the level selected"
+        },
+        "counts": {
+          "type": "string",
+          "description": "Stringified JSON for number of counts per choice (A, B, C, and D)"
+        }
+      },
+      "required": [
+        "id",
+        "key",
+        "level",
+        "characteristic",
+        "recommendation",
+        "counts"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/surveys/{docId}",
+        "definition": {
+          "entityName": "Survey",
+          "schema": {
+            "$ref": "#/backend/entities/Survey"
+          },
+          "description": "Stores survey responses submitted by schools. Admin access is required to read survey data. Includes survey questions and answers, and details of the school which submitted the survey.",
+          "params": [
+            {
+              "name": "docId",
+              "description": "The unique identifier for each survey document."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to store survey submissions securely and efficiently. It consists of a single collection, `surveys`, where each document represents a survey response. The structure prioritizes simplicity and adheres to the principle of Authorization Independence by avoiding complex hierarchical data structures or `get()` calls in security rules.  The design supports the required QAPs because access to read is limited to admins (using email allowlisting in rules), ensuring unauthorized list operations are prevented. Data validation rules are enforced to ensure only valid survey data is stored. There are no subcollections used in this model."
+  }
+}
