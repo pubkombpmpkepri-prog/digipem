@@ -1,68 +1,72 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { Chrome } from 'lucide-react';
 import { ALLOWED_ADMIN_EMAILS } from '@/config/admin';
+import { LogIn } from 'lucide-react';
 
 export default function LoginPage() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
-    // Wait until Firebase has determined the user's auth state
     if (isUserLoading) {
       return;
     }
     
-    // If a user is logged in, check if they are an admin
     if (user) {
       const userIsAdmin = user.email && ALLOWED_ADMIN_EMAILS.includes(user.email);
       if (userIsAdmin) {
-        // If they are an admin, redirect them to the dashboard
         router.push('/admin');
       }
     }
-    // If no user or not an admin, stay on the login page
   }, [user, isUserLoading, router]);
 
-  const handleSignIn = async () => {
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+
     if (!auth) {
         toast({
             variant: 'destructive',
             title: 'Login Gagal',
             description: 'Layanan otentikasi tidak tersedia. Coba lagi nanti.',
         });
+        setIsLoggingIn(false);
         return;
     }
-    const provider = new GoogleAuthProvider();
+    
     try {
-      await signInWithPopup(auth, provider);
+      await signInWithEmailAndPassword(auth, email, password);
       // The useEffect hook will handle redirection on successful login
     } catch (error) {
-      console.error('Error signing in with Google: ', error);
+      console.error('Error signing in with email/password: ', error);
       toast({
         variant: 'destructive',
         title: 'Login Gagal',
-        description: 'Terjadi kesalahan saat mencoba masuk. Silakan coba lagi.',
+        description: 'Email atau password salah. Silakan coba lagi.',
       });
+    } finally {
+        setIsLoggingIn(false);
     }
   };
   
-  // Show a loading message while Firebase is checking the auth state
   if (isUserLoading) {
     return <div className="flex h-[80vh] items-center justify-center">Memuat...</div>;
   }
 
-  // If a user is logged in but not an admin, they should still see the login page
-  // The redirection to /admin happens inside the useEffect if they are an admin
   return (
     <div className="flex min-h-[80vh] flex-col items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
@@ -73,14 +77,38 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button
-            onClick={handleSignIn}
-            className="w-full"
-            size="lg"
-          >
-            <Chrome className="mr-2 h-5 w-5" />
-            Masuk dengan Google
-          </Button>
+          <form onSubmit={handleSignIn} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="admin@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={isLoggingIn}
+            >
+              <LogIn className="mr-2 h-5 w-5" />
+              {isLoggingIn ? 'Memproses...' : 'Masuk'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
