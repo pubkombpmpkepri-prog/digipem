@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useEffect, useState } from 'react';
 import { ALLOWED_ADMIN_EMAILS } from '@/config/admin';
 
 
@@ -23,26 +22,13 @@ export default function Header() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-        const checkAdmin = async () => {
-            const idTokenResult = await user.getIdTokenResult();
-            if(idTokenResult.claims.admin === true || (user.email && ALLOWED_ADMIN_EMAILS.includes(user.email))) {
-                setIsAdmin(true);
-            } else {
-                setIsAdmin(false);
-            }
-        };
-        checkAdmin();
-    } else {
-        setIsAdmin(false);
-    }
-  }, [user]);
+  const isAdmin = user?.email && ALLOWED_ADMIN_EMAILS.includes(user.email);
 
   const handleSignOut = async () => {
-    await signOut(auth);
+    if (auth) {
+        await signOut(auth);
+    }
     router.push('/');
   };
 
@@ -77,7 +63,7 @@ export default function Header() {
             </Button>
           )}
 
-          {user && isAdmin ? (
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">

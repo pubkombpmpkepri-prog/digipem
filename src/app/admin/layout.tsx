@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser, useAuth } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -13,53 +13,40 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, isUserLoading } = useUser();
-  const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    if (isUserLoading) return;
+    // Wait until the initial user loading is complete
+    if (isUserLoading) {
+      return;
+    }
 
+    // If no user is logged in, redirect to the login page
     if (!user) {
       router.replace('/login');
       return;
     }
 
-    const checkAdminStatus = async () => {
-      try {
-        const idTokenResult = await user.getIdTokenResult();
-        const userIsAdmin =
-          idTokenResult.claims.admin === true ||
-          (user.email && ALLOWED_ADMIN_EMAILS.includes(user.email));
+    // Check if the logged-in user's email is in the allowed list
+    const userIsAdmin = user.email && ALLOWED_ADMIN_EMAILS.includes(user.email);
 
-        if (!userIsAdmin) {
-          toast({
-            variant: 'destructive',
-            title: 'Akses Ditolak',
-            description: 'Anda tidak memiliki hak akses ke halaman admin.',
-          });
-          router.replace('/login');
-        }
-        setIsAdmin(userIsAdmin);
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Gagal Memverifikasi Akses',
-            description: 'Terjadi kesalahan saat memeriksa status admin Anda.',
-        });
-        router.replace('/login');
-      } finally {
-        setIsCheckingAdmin(false);
-      }
-    };
+    if (userIsAdmin) {
+      setIsAuthorized(true);
+    } else {
+      // If not an admin, show an error and redirect
+      toast({
+        variant: 'destructive',
+        title: 'Akses Ditolak',
+        description: 'Anda tidak memiliki hak akses ke halaman admin.',
+      });
+      router.replace('/login');
+    }
+  }, [user, isUserLoading, router, toast]);
 
-    checkAdminStatus();
-  }, [user, isUserLoading, router, toast, auth]);
-
-  if (isUserLoading || isCheckingAdmin || !isAdmin) {
+  // While loading or if not authorized, show a skeleton loading screen
+  if (isUserLoading || !isAuthorized) {
     return (
       <div className="container mx-auto p-4 md:p-8">
         <div className="space-y-4">
@@ -76,5 +63,6 @@ export default function AdminLayout({
     );
   }
 
+  // If authorized, render the admin content
   return <>{children}</>;
 }

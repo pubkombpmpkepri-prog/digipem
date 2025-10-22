@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -15,46 +15,37 @@ export default function LoginPage() {
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
 
   useEffect(() => {
-    if (isUserLoading) return;
-
-    if (!user) {
-      setIsCheckingAdmin(false);
+    // Wait until Firebase has determined the user's auth state
+    if (isUserLoading) {
       return;
     }
     
-    const checkAdminStatus = async () => {
-        try {
-            const idTokenResult = await user.getIdTokenResult();
-            const userIsAdmin =
-            idTokenResult.claims.admin === true ||
-            (user.email && ALLOWED_ADMIN_EMAILS.includes(user.email));
-            
-            setIsAdmin(userIsAdmin);
-
-            if (userIsAdmin) {
-                router.push('/admin');
-            }
-        } catch (error) {
-             console.error("Error checking admin status:", error);
-             // Stay on login page if admin check fails
-        } finally {
-            setIsCheckingAdmin(false);
-        }
-    };
-    
-    checkAdminStatus();
-
+    // If a user is logged in, check if they are an admin
+    if (user) {
+      const userIsAdmin = user.email && ALLOWED_ADMIN_EMAILS.includes(user.email);
+      if (userIsAdmin) {
+        // If they are an admin, redirect them to the dashboard
+        router.push('/admin');
+      }
+    }
+    // If no user or not an admin, stay on the login page
   }, [user, isUserLoading, router]);
 
   const handleSignIn = async () => {
+    if (!auth) {
+        toast({
+            variant: 'destructive',
+            title: 'Login Gagal',
+            description: 'Layanan otentikasi tidak tersedia. Coba lagi nanti.',
+        });
+        return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      // The useEffect will handle the redirect after state change
+      // The useEffect hook will handle redirection on successful login
     } catch (error) {
       console.error('Error signing in with Google: ', error);
       toast({
@@ -65,10 +56,13 @@ export default function LoginPage() {
     }
   };
   
-  if (isUserLoading || isCheckingAdmin || isAdmin) {
+  // Show a loading message while Firebase is checking the auth state
+  if (isUserLoading) {
     return <div className="flex h-[80vh] items-center justify-center">Memuat...</div>;
   }
 
+  // If a user is logged in but not an admin, they should still see the login page
+  // The redirection to /admin happens inside the useEffect if they are an admin
   return (
     <div className="flex min-h-[80vh] flex-col items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
