@@ -12,7 +12,7 @@ import StepQuestions from './step-questions';
 import StepSummary from './step-summary';
 import { Card } from '@/components/ui/card';
 import { surveyQuestions, finalLevels } from '@/lib/survey-data';
-import { submitSurvey } from '@/app/actions';
+import { validateSurvey } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { AnswerChoice, FinalLevelResult } from '@/types/survey';
 import ThankYouMessage from './thank-you';
@@ -80,27 +80,22 @@ export default function SurveyPage() {
         if (ans) counts[ans]++;
     });
 
-    // New rule: If there are 4 or more 'D' answers, the level is Optimal.
     if (counts.D >= 4) {
       return { ...finalLevels['D'], counts };
     }
 
-    // If not, fall back to the previous logic but exclude 'D' since it didn't meet the threshold.
     let majorityVote: AnswerChoice = 'A';
     let maxCount = 0;
 
-    // We check C, B, A. If 'D' was the majority but less than 4, it will fall to the next highest.
     const priority: AnswerChoice[] = ['C', 'B', 'A'];
     
-    // First, find the max count among C, B, A
     for (const level of priority) {
-        if (counts[level] > maxCount) {
+        if (counts[level] >= maxCount) {
             maxCount = counts[level];
             majorityVote = level;
         }
     }
     
-    // If D has more votes than C, B, A, but less than 4, it defaults to C (Lanjut)
     if (counts.D > maxCount) {
         majorityVote = 'C';
     }
@@ -147,12 +142,23 @@ export default function SurveyPage() {
             createdAt: serverTimestamp(),
         };
 
+        // Validate data before submitting
+        const validation = validateSurvey(submissionData);
+        if (!validation.success) {
+            toast({
+                variant: 'destructive',
+                title: 'Data Tidak Valid',
+                description: validation.error,
+            });
+            setIsSubmitting(false);
+            return;
+        }
+
+
         const surveysColRef = collection(firestore, 'surveys');
         
         addDoc(surveysColRef, submissionData)
-          .then(async () => {
-            await submitSurvey(submissionData);
-
+          .then(() => {
             toast({
                 title: 'Survei Terkirim!',
                 description: 'Terima kasih atas partisipasi Anda.',
@@ -168,7 +174,6 @@ export default function SurveyPage() {
               });
               errorEmitter.emit('permission-error', permissionError);
               
-              // Also show a toast to the user
               toast({
                   variant: 'destructive',
                   title: 'Gagal Mengirim',
@@ -178,7 +183,6 @@ export default function SurveyPage() {
           });
 
     } catch (error) {
-        // This will catch errors from data preparation
         console.error('Error during submission preparation: ', error);
         toast({
             variant: 'destructive',
