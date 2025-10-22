@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -15,6 +16,11 @@ import { submitSurvey } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { AnswerChoice, FinalLevelResult } from '@/types/survey';
 import ThankYouMessage from './thank-you';
+
+import { useAuth, useFirestore } from '@/firebase';
+import { signInAnonymously } from 'firebase/auth';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
 
 const biodataSchema = z.object({
   nama: z.string().min(3, 'Nama harus diisi, minimal 3 karakter'),
@@ -35,6 +41,9 @@ export default function SurveyPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
   
+  const auth = useAuth();
+  const firestore = useFirestore();
+
   const methods = useForm<SurveyFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -90,47 +99,69 @@ export default function SurveyPage() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    const formData = methods.getValues();
-    const finalLevel = calculateFinalLevel(formData.answers);
-
-    const perQuestionFeedback = formData.answers.map((choice, index) => {
-        const question = surveyQuestions[index];
-        return {
-            id: question.id,
-            choice,
-            feedback: question.options[choice].feedback
-        }
-    });
-
-    const submissionData = {
-        biodata: formData.biodata,
-        answers: formData.answers,
-        perQuestionFeedback,
-        finalLevel: {
-            key: finalLevel.key,
-            level: finalLevel.level,
-            characteristic: finalLevel.characteristic,
-            counts: finalLevel.counts,
-        }
-    };
     
-    try {
-      const result = await submitSurvey(submissionData);
-      if (result.success) {
+    if (!auth || !firestore) {
         toast({
-          title: 'Survei Terkirim!',
-          description: 'Terima kasih atas partisipasi Anda.',
+            variant: 'destructive',
+            title: 'Gagal Mengirim',
+            description: 'Koneksi ke server bermasalah. Mohon coba lagi.',
+        });
+        setIsSubmitting(false);
+        return;
+    }
+
+    try {
+        // Step 1: Ensure user is authenticated (anonymously is fine)
+        if (!auth.currentUser) {
+            await signInAnonymously(auth);
+        }
+
+        // Step 2: Prepare the data
+        const formData = methods.getValues();
+        const finalLevel = calculateFinalLevel(formData.answers);
+        const perQuestionFeedback = formData.answers.map((choice, index) => {
+            const question = surveyQuestions[index];
+            return {
+                id: question.id,
+                choice,
+                feedback: question.options[choice].feedback
+            }
+        });
+
+        const submissionData = {
+            biodata: formData.biodata,
+            answers: formData.answers,
+            perQuestionFeedback,
+            finalLevel: {
+                key: finalLevel.key,
+                level: finalLevel.level,
+                characteristic: finalLevel.characteristic,
+                counts: finalLevel.counts,
+            },
+            createdAt: serverTimestamp(),
+        };
+
+        // Step 3: Use client SDK to write to Firestore
+        await addDoc(collection(firestore, 'surveys'), submissionData);
+        
+        // Step 4: Call server action just to revalidate path
+        await submitSurvey(submissionData);
+
+        toast({
+            title: 'Survei Terkirim!',
+            description: 'Terima kasih atas partisipasi Anda.',
         });
         setIsSubmitted(true);
-      } else {
+
+    } catch (error) {
+        console.error('Error submitting survey: ', error);
         toast({
-          variant: 'destructive',
-          title: 'Gagal Mengirim',
-          description: result.error || 'Terjadi kesalahan. Silakan coba lagi.',
+            variant: 'destructive',
+            title: 'Gagal Mengirim',
+            description: 'Terjadi kesalahan saat menyimpan data. Silakan coba lagi.',
         });
-      }
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   };
   

@@ -1,37 +1,9 @@
+
 'use server';
 
 import { z } from 'zod';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import { collection, addDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
-
-// Function to get the initialized Firebase Admin app
-function getAdminApp(): App {
-    const appName = 'admin-server-actions';
-    const existingApp = getApps().find(app => app?.name === appName);
-    if (existingApp) {
-        return existingApp;
-    }
-
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-        ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-        : null;
-
-    if (!serviceAccount) {
-        throw new Error('Firebase service account credentials are not set in environment variables.');
-    }
-
-    return initializeApp({
-        credential: cert(serviceAccount),
-    }, appName);
-}
-
-// Function to get the Firestore instance
-function getAdminDb(): Firestore {
-    return getFirestore(getAdminApp());
-}
-
 
 const biodataSchema = z.object({
   nama: z.string().min(1, 'Nama wajib diisi'),
@@ -62,7 +34,8 @@ const surveySchema = z.object({
   }),
 });
 
-
+// This action now receives a plain object and will be called from a client component
+// that has access to an initialized Firestore instance.
 export async function submitSurvey(data: unknown) {
   const parsed = surveySchema.safeParse(data);
 
@@ -74,25 +47,23 @@ export async function submitSurvey(data: unknown) {
     };
   }
 
+  // We are removing the server-side Firebase Admin logic from here.
+  // The client will now be responsible for getting the Firestore instance
+  // and passing the data to this action is no longer needed as the client will perform the write.
+  // This server action is now a placeholder and the logic will be moved to the client.
+  // The actual submission will be handled client-side in survey-page.tsx.
+  
   try {
-    const db = getAdminDb();
-    const docData = {
-      ...parsed.data,
-      createdAt: serverTimestamp(),
-    };
-    // Note: Firestore Admin SDK is used here, so client-side non-blocking logic doesn't apply
-    await addDoc(collection(db, 'surveys'), docData);
-    
-    // Revalidate admin path to show new data
+    // Revalidate the admin path to reflect new data.
+    // The client will perform the write, and we still want to revalidate.
     revalidatePath('/admin');
-    
-    return { success: true };
+    return { success: true, data: parsed.data };
+
   } catch (error) {
-    console.error('Error adding document: ', error);
-    // Check if the error is a known type to provide a more specific message
-    if (error instanceof Error) {
-        return { success: false, error: `Gagal menyimpan data ke server: ${error.message}` };
+    console.error('Error during revalidation or data processing: ', error);
+     if (error instanceof Error) {
+        return { success: false, error: `Gagal memvalidasi data di server: ${error.message}` };
     }
-    return { success: false, error: 'Gagal menyimpan data ke server.' };
+    return { success: false, error: 'Gagal memvalidasi data di server.' };
   }
 }
