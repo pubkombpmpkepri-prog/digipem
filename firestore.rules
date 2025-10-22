@@ -1,44 +1,42 @@
 /**
- * @fileOverview Firestore Security Rules for the survey app.
+ * @fileoverview Firestore Security Rules for the survey application.
  *
  * Core Philosophy:
- * This ruleset restricts listing surveys to authenticated users with the email "admin@example.com", effectively providing administrator-level access.  All other users are denied list access. Get access is intentionally left open to facilitate debugging. Write access is denied for all users to prevent data modification during this prototyping phase.
+ * This ruleset restricts read access to the `surveys` collection to authenticated admin users.
+ * Write access is denied for all users in this prototype.
  *
  * Data Structure:
- * Data is stored in a flat `/surveys/{surveyId}` collection.
+ * The primary data is stored in the `surveys` collection at the root of the database.
+ * Each document represents a single survey submission.
  *
  * Key Security Decisions:
- * - Listing surveys is restricted to an admin user (email address allowlist).
- * - All write access is denied.
+ * - Only authenticated admins are allowed to read surveys.
+ * - No user-generated content is allowed in this prototype.
+ * - No data validation is performed in this prototyping phase beyond auth checks.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Restricts access to the /surveys collection. Only allows authenticated admin users to list surveys.
-     * @path /surveys/{surveyId}
-     * @allow (list) User with email "admin@example.com" can list surveys.
-     * @deny (list) Any other user attempting to list surveys.
-     * @deny (create, update, delete) All users are denied write access.
-     * @principle Restricts access to the surveys collection to admin users.
+     * @description Allows only authenticated admins to read survey data.
+     * @path /surveys/{docId}
+     * @allow (get, list) User with email "apkelana@gmail.com" can read surveys.
+     * @deny (get, list) Any non-authenticated user cannot read surveys.
+     * @principle Restricts read access to authenticated admins.
      */
-    match /surveys/{surveyId} {
-      allow get: if true;
-      allow list: if isAdmin();
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+    match /surveys/{docId} {
+      allow get, list: if isAdmin();
+      allow create, update, delete: if false;
     }
 
-    // Helper function to check if the user is an admin based on their email.
-    function isAdmin() {
-      return isSignedIn() && request.auth.token.email == "admin@example.com";
-    }
-
-    // Helper function to check if the user is signed in.
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == "apkelana@gmail.com";
     }
   }
 }
