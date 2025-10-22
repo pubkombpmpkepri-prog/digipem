@@ -2,11 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
-import dynamic from 'next/dynamic';
-
-const Header = dynamic(() => import('@/components/layout/header'), {
-  ssr: false,
-});
+import Header from '@/components/layout/header';
 
 export const metadata: Metadata = {
   title: 'Sekolah Digital - Survei Digitalisasi Pembelajaran',
