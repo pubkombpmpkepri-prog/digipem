@@ -12,7 +12,6 @@ import StepQuestions from './step-questions';
 import StepSummary from './step-summary';
 import { Card } from '@/components/ui/card';
 import { surveyQuestions, finalLevels } from '@/lib/survey-data';
-import { validateSurvey } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { AnswerChoice, FinalLevelResult } from '@/types/survey';
 import ThankYouMessage from './thank-you';
@@ -20,19 +19,43 @@ import ThankYouMessage from './thank-you';
 import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-
+// Zod schemas for validation, moved from actions.ts
 const biodataSchema = z.object({
   nama: z.string().min(3, 'Nama harus diisi, minimal 3 karakter'),
   sekolah: z.string().min(3, 'Nama sekolah harus diisi'),
   npsn: z.string().regex(/^[0-9]{8}$/, 'NPSN harus terdiri dari 8 digit angka'),
 });
 
-const formSchema = z.object({
+const answerChoiceSchema = z.enum(['A', 'B', 'C', 'D']);
+
+const surveyFormSchema = z.object({
   biodata: biodataSchema,
-  answers: z.array(z.enum(['A', 'B', 'C', 'D'])).length(5, 'Semua 5 pertanyaan harus dijawab'),
+  answers: z.array(answerChoiceSchema).length(5, 'Semua 5 pertanyaan harus dijawab'),
 });
 
-export type SurveyFormData = z.infer<typeof formSchema>;
+const submissionSchema = z.object({
+  biodata: biodataSchema,
+  answers: z.array(answerChoiceSchema).length(5, 'Harus ada 5 jawaban'),
+  perQuestionFeedback: z.array(z.object({
+      id: z.string(),
+      choice: answerChoiceSchema,
+      feedback: z.string(),
+  })).length(5),
+  finalLevel: z.object({
+    key: answerChoiceSchema,
+    level: z.string(),
+    characteristic: z.string(),
+    counts: z.object({
+        A: z.number(),
+        B: z.number(),
+        C: z.number(),
+        D: z.number(),
+    }),
+  }),
+});
+
+
+export type SurveyFormData = z.infer<typeof surveyFormSchema>;
 
 export default function SurveyPage() {
   const [step, setStep] = useState(1);
@@ -43,7 +66,7 @@ export default function SurveyPage() {
   const firestore = useFirestore();
 
   const methods = useForm<SurveyFormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(surveyFormSchema),
     defaultValues: {
       biodata: {
         nama: '',
@@ -103,6 +126,20 @@ export default function SurveyPage() {
 
     return { ...finalLevels[majorityVote], counts };
   };
+  
+  // Client-side validation function
+  function validateSurvey(data: unknown) {
+    const parsed = submissionSchema.safeParse(data);
+    if (!parsed.success) {
+        return {
+        success: false,
+        error: 'Data tidak valid.',
+        issues: parsed.error.issues,
+        };
+    }
+    return { success: true, data: parsed.data };
+  }
+
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
