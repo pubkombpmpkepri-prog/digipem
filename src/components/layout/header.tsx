@@ -63,7 +63,7 @@ export default function Header() {
             </Button>
           )}
 
-          {user ? (
+          {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -96,15 +96,6 @@ export default function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-             !isUserLoading &&
-             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push('/login')}
-            >
-              Admin Login
-            </Button>
           )}
         </nav>
       </div>
