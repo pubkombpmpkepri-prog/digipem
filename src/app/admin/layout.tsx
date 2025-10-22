@@ -6,17 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ALLOWED_ADMIN_EMAILS } from '@/config/admin';
 
-// This function checks for the admin custom claim in the user's ID token.
-async function userIsAdmin(user: any): Promise<boolean> {
-  if (!user) return false;
-  try {
-    const idTokenResult = await user.getIdTokenResult(true); // Force refresh the token
-    return !!idTokenResult.claims.admin;
-  } catch (error) {
-    console.error("Error getting ID token result:", error);
-    return false;
-  }
+// This function checks if the user's email is in the allowed list.
+function userIsAdmin(user: any): boolean {
+  if (!user || !user.email) return false;
+  return ALLOWED_ADMIN_EMAILS.includes(user.email);
 }
 
 export default function AdminLayout({
@@ -28,7 +23,6 @@ export default function AdminLayout({
   const router = useRouter();
   const { toast } = useToast();
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isCheckingClaims, setIsCheckingClaims] = useState(true);
 
   useEffect(() => {
     if (isUserLoading) {
@@ -39,25 +33,20 @@ export default function AdminLayout({
       router.replace('/login');
       return;
     }
-
-    setIsCheckingClaims(true);
-    userIsAdmin(user).then(isAdmin => {
-      if (isAdmin) {
-        setIsAuthorized(true);
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Akses Ditolak',
-          description: 'Anda tidak memiliki hak akses admin (custom claim).',
-        });
-        router.replace('/login');
-      }
-      setIsCheckingClaims(false);
-    });
-
+    
+    if (userIsAdmin(user)) {
+      setIsAuthorized(true);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Akses Ditolak',
+        description: 'Akun Anda tidak terdaftar sebagai admin.',
+      });
+      router.replace('/login');
+    }
   }, [user, isUserLoading, router, toast]);
 
-  if (isUserLoading || isCheckingClaims || !isAuthorized) {
+  if (isUserLoading || !isAuthorized) {
     return (
       <div className="container mx-auto p-4 md:p-8">
         <div className="space-y-4">
