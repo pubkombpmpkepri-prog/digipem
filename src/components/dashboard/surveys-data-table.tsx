@@ -49,6 +49,8 @@ export function SurveysDataTable<TData extends SurveyDocument, TValue>({
     state: {
       sorting,
     },
+    // This will prevent row data from being reset on data update, which is useful for optimistic UI updates (though we are not doing that here, it's good practice).
+    autoResetPageIndex: false, 
   });
 
   const handleDownload = () => {

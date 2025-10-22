@@ -5,20 +5,30 @@ import { SurveyDocument } from '@/types/survey';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
+import { MoreHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-
-export const columns: ColumnDef<SurveyDocument>[] = [
+// The 'actions' column definition will be passed a 'deleteSurvey' function from the DataTable component.
+export const getColumns = (
+  deleteSurvey: (surveyId: string) => void,
+  openDeleteDialog: (surveyId: string) => void
+): ColumnDef<SurveyDocument>[] => [
   {
     accessorKey: 'createdAt',
     header: 'Tanggal',
     cell: ({ row }) => {
-        const createdAt = row.original.createdAt as Timestamp;
-        // When using the Firebase client SDK, createdAt is a Firestore Timestamp object.
-        // We need to convert it to a JavaScript Date object before formatting.
-        if (createdAt && typeof createdAt.toDate === 'function') {
-          return format(createdAt.toDate(), 'dd MMM yyyy, HH:mm');
-        }
-        return 'N/A';
+      const createdAt = row.original.createdAt as Timestamp;
+      if (createdAt && typeof createdAt.toDate === 'function') {
+        return format(createdAt.toDate(), 'dd MMM yyyy, HH:mm');
+      }
+      return 'N/A';
     },
   },
   {
@@ -46,20 +56,57 @@ export const columns: ColumnDef<SurveyDocument>[] = [
     header: 'Tingkat',
     cell: ({ row }) => {
       const level = row.original.finalLevel.key;
-      const variant: 'default' | 'secondary' | 'outline' | 'destructive' = 
-        level === 'D' ? 'default' :
-        level === 'C' ? 'secondary' :
-        level === 'B' ? 'outline' : 'destructive';
-        
-      const levelText = 
-        level === 'D' ? 'Optimal' :
-        level === 'C' ? 'Lanjut' :
-        level === 'B' ? 'Menengah' : 'Dasar';
+      const variant: 'default' | 'secondary' | 'outline' | 'destructive' =
+        level === 'D'
+          ? 'default'
+          : level === 'C'
+          ? 'secondary'
+          : level === 'B'
+          ? 'outline'
+          : 'destructive';
 
-      // Manually set colors for destructive variant as it's not ideal
-      const style = level === 'A' ? { backgroundColor: 'hsl(var(--chart-5))', color: 'white' } : {};
+      const levelText =
+        level === 'D'
+          ? 'Optimal'
+          : level === 'C'
+          ? 'Lanjut'
+          : level === 'B'
+          ? 'Menengah'
+          : 'Dasar';
 
-      return <Badge variant={variant} style={style}>{levelText}</Badge>;
+      const style =
+        level === 'A'
+          ? { backgroundColor: 'hsl(var(--chart-5))', color: 'white' }
+          : {};
+
+      return (
+        <Badge variant={variant} style={style}>
+          {levelText}
+        </Badge>
+      );
+    },
+  },
+  {
+    id: 'actions',
+    cell: ({ row }) => {
+      const survey = row.original;
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Buka menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => openDeleteDialog(survey.id)}>
+              Hapus Data
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
     },
   },
 ];
