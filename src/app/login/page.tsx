@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -22,14 +23,13 @@ export default function LoginPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
-    if (isUserLoading) {
-      return;
-    }
-    
-    if (user) {
+    // This effect now only handles redirecting an already logged-in admin
+    // It will not handle the redirection immediately after login anymore.
+    // The admin layout will handle pulling the user into the admin page.
+    if (!isUserLoading && user) {
       const userIsAdmin = user.email && ALLOWED_ADMIN_EMAILS.includes(user.email);
       if (userIsAdmin) {
-        router.push('/admin');
+        router.replace('/admin');
       }
     }
   }, [user, isUserLoading, router]);
@@ -50,7 +50,8 @@ export default function LoginPage() {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // The useEffect hook will handle redirection on successful login
+      // After successful sign-in, the onAuthStateChanged listener will update the `user` state.
+      // The useEffect hook above will then trigger the redirection.
     } catch (error) {
       console.error('Error signing in with email/password: ', error);
       toast({
@@ -63,9 +64,22 @@ export default function LoginPage() {
     }
   };
   
+  // Show a loading state while Firebase is initializing or checking auth status.
+  // This prevents a flash of the login form if the user is already logged in.
   if (isUserLoading) {
     return <div className="flex h-[80vh] items-center justify-center">Memuat...</div>;
   }
+  
+  // If the user is logged in but not an admin, they shouldn't see the login form.
+  // You might want to redirect them to the home page or show a message.
+  if (user && !ALLOWED_ADMIN_EMAILS.includes(user.email || '')) {
+     return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <p>Anda sudah login, tetapi tidak memiliki akses admin.</p>
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex min-h-[80vh] flex-col items-center justify-center bg-background px-4">
@@ -114,3 +128,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

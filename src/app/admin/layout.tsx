@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -23,7 +24,7 @@ export default function AdminLayout({
       return;
     }
 
-    // If no user is logged in, redirect to the login page
+    // If no user is logged in after loading, redirect to the login page
     if (!user) {
       router.replace('/login');
       return;
@@ -33,9 +34,10 @@ export default function AdminLayout({
     const userIsAdmin = user.email && ALLOWED_ADMIN_EMAILS.includes(user.email);
 
     if (userIsAdmin) {
+      // If the user is an admin, authorize them to see the content
       setIsAuthorized(true);
     } else {
-      // If not an admin, show an error and redirect
+      // If not an admin, show a toast and redirect to the login page
       toast({
         variant: 'destructive',
         title: 'Akses Ditolak',
@@ -45,7 +47,7 @@ export default function AdminLayout({
     }
   }, [user, isUserLoading, router, toast]);
 
-  // While loading or if not authorized, show a skeleton loading screen
+  // While loading or if not yet authorized, show a skeleton loading screen
   if (isUserLoading || !isAuthorized) {
     return (
       <div className="container mx-auto p-4 md:p-8">
