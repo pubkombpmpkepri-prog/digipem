@@ -138,44 +138,52 @@ export const finalLevels: Record<AnswerChoice, FinalLevel> = {
     key: 'A',
     level: 'Tingkat Dasar',
     characteristic:
-      'Sekolah berada pada tahap awal pengenalan digitalisasi. Infrastruktur, kompetensi, dan kebijakan masih sangat terbatas. Fokus utama adalah membangun fondasi dan kesadaran.',
+      'Infrastruktur terbatas/ belum ada, guru belum mencoba platform, siswa minim keterlibatan, manajemen sekolah pasif, evaluasi belum ada.',
     recommendations: [
-      'Bentuk Tim TIK Sekolah untuk menyusun peta jalan digitalisasi.',
-      'Fokus pada pengadaan infrastruktur dasar (internet, proyektor) secara bertahap.',
-      'Adakan pelatihan TIK level pemula bagi seluruh guru.',
+      'Infrastruktur: Lakukan pendataan kebutuhan TIK, manfaatkan BOS untuk pembelian sarana dasar, ajukan bantuan ke Dinas.',
+      'SDM Guru: Adakan sosialisasi dan pelatihan dasar penggunaan Rumah Belajar, Rumah Pendidikan, dan IFP.',
+      'Manajemen: Advokasi kepala sekolah agar memasukkan program digitalisasi dalam RKAS dan rapat sekolah.',
+      'Siswa: Mulai dengan penggunaan sederhana (video pembelajaran, e-book).',
+      'Evaluasi: Susun instrumen evaluasi sederhana (misalnya survei kepuasan guru/siswa).',
     ],
   },
   B: {
     key: 'B',
     level: 'Tingkat Menengah',
     characteristic:
-      'Sekolah sudah memiliki beberapa inisiatif digital, namun belum terstruktur dan merata. Beberapa guru sudah mulai mencoba, tapi pemanfaatan belum menjadi budaya.',
+      'Sarana ada tapi terbatas, sebagian guru mulai mencoba, siswa kadang terlibat, kepala sekolah mendukung pasif, evaluasi belum rutin.',
     recommendations: [
-      'Standarisasi penggunaan platform pembelajaran digital (misal: Google Workspace, PMM).',
-      'Buat jadwal rutin untuk sesi berbagi praktik baik antar guru (peer teaching).',
-      'Integrasikan alokasi anggaran TIK secara eksplisit dalam RKAS.',
+      'Infrastruktur: Optimalkan sarana yang ada, atur jadwal pemakaian, tingkatkan koneksi internet.',
+      'SDM Guru: Kembangkan peer teaching, buat kelompok belajar guru, tetapkan target minimal pemanfaatan platform digital.',
+      'Manajemen: Kepala sekolah diarahkan untuk memasukkan target digitalisasi ke dalam program kerja tahunan.',
+      'Siswa: Buat kebijakan agar pembelajaran digital menjadi bagian dari rutinitas misalnya tugas berbasis platform setiap minggu).',
+      'Evaluasi: Jadwalkan evaluasi minimal per semester.',
     ],
   },
   C: {
     key: 'C',
     level: 'Tingkat Lanjut',
     characteristic:
-      'Pemanfaatan TIK sudah cukup merata dan menjadi bagian dari proses pembelajaran. Dukungan manajemen sudah baik, namun perlu optimalisasi dan integrasi yang lebih dalam.',
+      'Sarana lengkap tapi belum maksimal, mayoritas guru sudah memanfaatkan tapi belum terintegrasi, siswa sering terlibat namun belum jadi budaya, evaluasi rutin tapi belum ditindaklanjuti.',
     recommendations: [
-      'Kembangkan konten-konten digital orisinal buatan guru dan siswa.',
-      'Lakukan supervisi akademik yang berfokus pada integrasi TIK dalam pedagogi.',
-      'Mulai bangun kolaborasi digital dengan sekolah atau institusi lain.',
+      'Infrastruktur: Monitoring pemanfaatan sarana agar optimal, lakukan pemeliharaan berkala.',
+      'SDM Guru: Integrasikan pemanfaatan Rumah Belajar, Rumah Pendidikan, IFP ke kurikulum, RPP, dan supervisi pembelajaran.',
+      'Manajemen: Kepala sekolah meningkatkan monitoring dan memperluas kolaborasi (misalnya dengan sekolah lain).',
+      'Siswa: Tugas, proyek, ujian formatif berbasis digital untuk membentuk budaya belajar.',
+      'Evaluasi: Gunakan hasil evaluasi untuk perbaikan pembelajaran, masukkan ke dalam laporan sekolah.',
     ],
   },
   D: {
     key: 'D',
     level: 'Tingkat Optimal',
     characteristic:
-      'Digitalisasi telah menjadi budaya sekolah. Pemanfaatan TIK sudah optimal, kreatif, dan terintegrasi penuh dalam kurikulum dan manajemen sekolah. Sekolah menjadi rujukan.',
+      'Infrastruktur lengkap dan terpakai optimal, guru rutin & kreatif, kepala sekolah sangat mendukung, siswa sudah menjadikan digitalisasi sebagai budaya, evaluasi rutin & ditindaklanjuti.',
     recommendations: [
-      'Dokumentasikan dan publikasikan praktik-praktik baik secara luas.',
-      'Jadikan sekolah sebagai pusat pelatihan atau mentor bagi sekolah-sekolah di sekitarnya.',
-      'Terus berinovasi dengan menjajaki teknologi-teknologi pembelajaran baru (AI, VR, dll).',
+      'Infrastruktur: Dokumentasikan praktik baik penggunaan TIK, sebarkan sebagai inspirasi.',
+      'SDM Guru: Dorong guru untuk menghasilkan inovasi pembelajaran digital dan mempresentasikannya di forum MGMP/KKG.',
+      'Manajemen: Jadikan sekolah sebagai role model digitalisasi, aktif dalam jejaring antar sekolah.',
+      'Siswa: Kembangkan student digital project (produk kreatif berbasis digital) dan ikutkan lomba.',
+      'Evaluasi: Publikasikan hasil evaluasi & tindak lanjut, bagikan praktik baik di forum kepala sekolah/Dinas.',
     ],
   },
 };
