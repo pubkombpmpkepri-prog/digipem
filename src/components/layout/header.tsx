@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -15,15 +16,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ALLOWED_ADMIN_EMAILS } from '@/config/admin';
+import { useEffect, useState } from 'react';
 
 
 export default function Header() {
-  const { user, isUserLoading } = useUser();
+  const { user } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const isAdmin = user?.email && ALLOWED_ADMIN_EMAILS.includes(user.email);
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        try {
+          const idTokenResult = await user.getIdTokenResult();
+          setIsAdmin(!!idTokenResult.claims.admin);
+        } catch (error) {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    checkAdminStatus();
+  }, [user]);
+
 
   const handleSignOut = async () => {
     if (auth) {
@@ -82,7 +99,7 @@ export default function Header() {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      {user.displayName}
+                      {user.displayName || "Pengguna"}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user.email}

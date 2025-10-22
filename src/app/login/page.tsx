@@ -8,10 +8,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { ALLOWED_ADMIN_EMAILS } from '@/config/admin';
 import { LogIn } from 'lucide-react';
+
+async function userIsAdmin(user: any): Promise<boolean> {
+  if (!user) return false;
+  try {
+    const idTokenResult = await user.getIdTokenResult();
+    return !!idTokenResult.claims.admin;
+  } catch (error) {
+    console.error("Error getting ID token result:", error);
+    return false;
+  }
+}
+
 
 export default function LoginPage() {
   const { user, isUserLoading } = useUser();
@@ -23,14 +34,12 @@ export default function LoginPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   useEffect(() => {
-    // This effect now only handles redirecting an already logged-in admin
-    // It will not handle the redirection immediately after login anymore.
-    // The admin layout will handle pulling the user into the admin page.
     if (!isUserLoading && user) {
-      const userIsAdmin = user.email && ALLOWED_ADMIN_EMAILS.includes(user.email);
-      if (userIsAdmin) {
-        router.replace('/admin');
-      }
+        userIsAdmin(user).then(isAdmin => {
+            if (isAdmin) {
+                router.replace('/admin');
+            }
+        });
     }
   }, [user, isUserLoading, router]);
 
@@ -50,8 +59,8 @@ export default function LoginPage() {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // After successful sign-in, the onAuthStateChanged listener will update the `user` state.
-      // The useEffect hook above will then trigger the redirection.
+      // After successful sign-in, the useUser hook will update,
+      // and the useEffect will handle redirection if the user is an admin.
     } catch (error) {
       console.error('Error signing in with email/password: ', error);
       toast({
@@ -64,18 +73,23 @@ export default function LoginPage() {
     }
   };
   
-  // Show a loading state while Firebase is initializing or checking auth status.
-  // This prevents a flash of the login form if the user is already logged in.
   if (isUserLoading) {
     return <div className="flex h-[80vh] items-center justify-center">Memuat...</div>;
   }
   
-  // If the user is logged in but not an admin, they shouldn't see the login form.
-  // You might want to redirect them to the home page or show a message.
-  if (user && !ALLOWED_ADMIN_EMAILS.includes(user.email || '')) {
-     return (
-      <div className="flex h-[80vh] items-center justify-center">
-        <p>Anda sudah login, tetapi tidak memiliki akses admin.</p>
+  if (user) {
+    // If user is logged in, show a message and a sign out button,
+    // as they might not be an admin and need to sign out to try another account.
+    return (
+      <div className="flex h-[80vh] flex-col items-center justify-center text-center">
+        <Card className="w-full max-w-sm p-6">
+            <CardTitle>Anda Sudah Masuk</CardTitle>
+            <CardDescription className="mt-2">
+                Anda sudah login sebagai {user.email}. <br/>
+                Jika Anda bukan admin, silakan keluar dan coba lagi.
+            </CardDescription>
+            <Button variant="outline" className="mt-4" onClick={() => auth && signOut(auth)}>Keluar</Button>
+        </Card>
       </div>
     );
   }
