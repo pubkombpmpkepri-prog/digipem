@@ -80,18 +80,32 @@ export default function SurveyPage() {
         if (ans) counts[ans]++;
     });
 
+    // New rule: If there are 4 or more 'D' answers, the level is Optimal.
+    if (counts.D >= 4) {
+      return { ...finalLevels['D'], counts };
+    }
+
+    // If not, fall back to the previous logic but exclude 'D' since it didn't meet the threshold.
     let majorityVote: AnswerChoice = 'A';
     let maxCount = 0;
 
-    const priority: AnswerChoice[] = ['D', 'C', 'B', 'A'];
-
+    // We check C, B, A. If 'D' was the majority but less than 4, it will fall to the next highest.
+    const priority: AnswerChoice[] = ['C', 'B', 'A'];
+    
+    // First, find the max count among C, B, A
     for (const level of priority) {
-      if (counts[level] > maxCount) {
-        maxCount = counts[level];
-        majorityVote = level;
-      }
+        if (counts[level] > maxCount) {
+            maxCount = counts[level];
+            majorityVote = level;
+        }
     }
     
+    // If D has more votes than C, B, A, but less than 4, it defaults to C (Lanjut)
+    if (counts.D > maxCount) {
+        majorityVote = 'C';
+    }
+
+
     return { ...finalLevels[majorityVote], counts };
   };
 
