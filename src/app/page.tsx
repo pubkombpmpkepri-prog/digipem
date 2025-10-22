@@ -9,7 +9,7 @@ export default function Home() {
           Survei Digitalisasi Pembelajaran
         </h1>
         <p className="mt-2 text-lg text-muted-foreground">
-          Bantu kami memetakan tingkat kesiapan digital sekolah Anda.
+          Bantu kami memetakan tingkat kesiapan Digitalisasi Pembelajaran di sekolah anda!
         </p>
       </header>
       <Card className="shadow-2xl shadow-primary/10">
