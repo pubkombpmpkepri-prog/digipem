@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------- Helpers --------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      // Opsi 1: custom claim admin
+      return isSignedIn() && (request.auth.token.admin == true
+        // Opsi 2: fallback allowlist email (ganti dengan email admin sebenarnya)
+        || request.auth.token.email in [
+          "admin1@bpmpkepri.go.id",
+          "admin2@bpmpkepri.go.id"
+        ]);
+    }
+
+    function isString(v) { return v is string; }
+    function isMap(v) { return v is map; }
+    function isList(v) { return v is list; }
+
+    // Validasi NPSN 8 digit
+    function validNPSN(n) {
+      return isString(n) && n.size() == 8 && n.matches('^[0-9]{8}$');
+    }
+
+    // Validasi answers = list panjang 5, hanya 'A'|'B'|'C'|'D'
+    function allABCD(listAns) {
+      return isList(listAns) && listAns.size() == 5
+        && listAns[0] in ['A','B','C','D']
+        && listAns[1] in ['A','B','C','D']
+        && listAns[2] in ['A','B','C','D']
+        && listAns[3] in ['A','B','C','D']
+        && listAns[4] in ['A','B','C','D'];
+    }
+
+    // Koleksi utama
+    match /surveys/{docId} {
+
+      // CREATE: Publik boleh submit, tapi field wajib tervalidasi.
+      allow create: if
+        // tidak perlu login untuk submit
+        request.resource.data.keys().hasOnly([
+          'biodata','answers','perQuestionFeedback','finalLevel','createdAt'
+        ])
+        &&
+        // biodata
+        isMap(request.resource.data.biodata)
+        && isString(request.resource.data.biodata.nama)
+        && request.resource.data.biodata.nama.size() > 0
+        && isString(request.resource.data.biodata.sekolah)
+        && request.resource.data.biodata.sekolah.size() > 0
+        && validNPSN(request.resource.data.biodata.npsn)
+        &&
+        // answers
+        allABCD(request.resource.data.answers)
+        &&
+        // perQuestionFeedback: list panjang 5 (minimal cek tipe)
+        isList(request.resource.data.perQuestionFeedback)
+        && request.resource.data.perQuestionFeedback.size() == 5
+        &&
+        // finalLevel
+        isMap(request.resource.data.finalLevel)
+        && request.resource.data.finalLevel.key in ['A','B','C','D']
+        && isString(request.resource.data.finalLevel.level)
+        && isString(request.resource.data.finalLevel.characteristic)
+        && isMap(request.resource.data.finalLevel.counts)
+        && request.resource.data.finalLevel.counts.A is int
+        && request.resource.data.finalLevel.counts.B is int
+        && request.resource.data.finalLevel.counts.C is int
+        && request.resource.data.finalLevel.counts.D is int
+        &&
+        // createdAt harus diset serverTimestamp
+        request.resource.data.createdAt == request.time;
+
+      // READ: HANYA ADMIN
+      allow get, list: if isAdmin();
+
+      // UPDATE/DELETE: ditolak dari klien
+      allow update, delete: if false;
+    }
+  }
+}
