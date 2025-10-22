@@ -1,51 +1,51 @@
 /**
- * @fileOverview Firestore Security Rules for the survey application.
+ * @fileoverview Firestore Security Rules for the survey application.
  *
  * Core Philosophy:
- * This ruleset restricts read access to the 'surveys' collection to authenticated users with a specific email.
- * All write access is denied to prevent unauthorized data modification.
+ * This ruleset enforces a role-based access control model, specifically an admin-only access for reading surveys data.
  *
  * Data Structure:
- * The data consists of a single top-level collection 'surveys', with each document representing a survey submission.
+ * All survey data is stored in the top-level `/surveys/{docId}` collection.
  *
  * Key Security Decisions:
- * - Listing the 'surveys' collection is only allowed for specific authenticated users (email allowlist).
- * - No write operations are permitted through these rules.
- * - Data validation is minimal, focusing on authorization and relational integrity rather than schema enforcement (prototyping mode).
+ * - Only admins are authorized to read survey data (get, list).
+ * - Any authenticated user can create survey data.
+ * - Survey updates or deletes are disallowed.
  *
- * Denormalization for Authorization:
- * This ruleset does not require denormalization because all necessary authorization information
- * is available directly via `request.auth` (email verification).
- *
- * Structural Segregation:
- * All survey data is stored in a single 'surveys' collection, with access controlled via email verification.
+ * Denormalization for Authorization: N/A.  No denormalization needed due to admin-based authorization.
+ * Structural Segregation: N/A. Single collection.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Only allow listing `surveys` collection if the user is authenticated and has a specific email. Get operations are not secured, so this effectively makes all documents publicly accessible if the exact path is known.
+     * @description Grants read access to admins and allows any authenticated user to create survey documents. Updates and deletes are disallowed.
      * @path /surveys/{docId}
-     * @allow (list) User with email "apkelana@gmail.com" listing surveys.
-     * @deny (list) User without email "apkelana@gmail.com" trying to list surveys.
-     * @allow (get) Any user getting the survey data.
-     * @deny (create) Any user trying to create a survey.
-     * @deny (update) Any user trying to update a survey.
-     * @deny (delete) Any user trying to delete a survey.
-     * @principle Limits listing access to authorized users (email allowlist).
+     * @allow (create) User with any valid auth can create survey data.
+     * @deny (get, list) Non-admin users cannot read survey data.
+     * @deny (update, delete) No user can update or delete survey data.
+     * @principle Restricts read access to admins while allowing any authenticated user to create survey documents.
      */
     match /surveys/{docId} {
-      allow get: if true;
-      allow list: if isSignedIn() && request.auth.token.email == "apkelana@gmail.com";
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      // Admins can read.
+      allow get, list: if isAdmin();
+
+      // Any authenticated user can create.
+      allow create: if isSignedIn();
+
+      // No one can update or delete.
+      allow update, delete: if false;
     }
 
-    // Define helper functions for re-usability and readability.
+    // ---- Helper functions ----
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    // Check if the user is in the allowed list of admin email addresses.
+    function isAdmin() {
+      return isSignedIn() && (request.auth.token.email in ["admin@example.com"]);
     }
   }
 }
