@@ -1,7 +1,6 @@
 
 // This file is no longer a server action file.
 // It is now a standard module for data validation schemas.
-'use server';
 import { z } from 'zod';
 
 export const biodataSchema = z.object({
