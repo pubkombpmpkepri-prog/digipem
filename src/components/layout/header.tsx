@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { GraduationCap, LogOut, ShieldCheck } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,31 +16,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useEffect, useState } from 'react';
+import { ALLOWED_ADMIN_EMAILS } from '@/config/admin';
 
 
 export default function Header() {
   const { user } = useUser();
   const auth = useAuth();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (user) {
-        try {
-          const idTokenResult = await user.getIdTokenResult();
-          setIsAdmin(!!idTokenResult.claims.admin);
-        } catch (error) {
-          setIsAdmin(false);
-        }
-      } else {
-        setIsAdmin(false);
-      }
-    };
-    checkAdminStatus();
-  }, [user]);
-
 
   const handleSignOut = async () => {
     if (auth) {
@@ -53,18 +35,19 @@ export default function Header() {
     if (!email) return 'U';
     return email[0].toUpperCase();
   };
+  
+  const userIsAdmin = user && ALLOWED_ADMIN_EMAILS.includes(user.email!);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <Link href="/" className="mr-auto flex items-center gap-2">
-          <GraduationCap className="h-6 w-6 text-primary" />
-          <span className="font-headline text-xl font-bold">
-            SekolahDigital
+          <span className="font-headline text-xl font-bold text-primary">
+            Digitalisasi Pembelajaran
           </span>
         </Link>
         <nav className="flex items-center gap-4">
-          {user && isAdmin && (
+          {user && userIsAdmin && (
             <Button
               variant="ghost"
               size="sm"
