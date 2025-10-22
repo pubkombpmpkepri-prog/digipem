@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AnswerChoice, FinalLevelResult } from '@/types/survey';
 import ThankYouMessage from './thank-you';
 
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -111,12 +111,10 @@ export default function SurveyPage() {
     }
 
     try {
-        // Step 1: Ensure user is authenticated (anonymously is fine)
         if (!auth.currentUser) {
             await signInAnonymously(auth);
         }
 
-        // Step 2: Prepare the data
         const formData = methods.getValues();
         const finalLevel = calculateFinalLevel(formData.answers);
         const perQuestionFeedback = formData.answers.map((choice, index) => {
@@ -141,26 +139,44 @@ export default function SurveyPage() {
             createdAt: serverTimestamp(),
         };
 
-        // Step 3: Use client SDK to write to Firestore
-        await addDoc(collection(firestore, 'surveys'), submissionData);
+        const surveysColRef = collection(firestore, 'surveys');
         
-        // Step 4: Call server action just to revalidate path
-        await submitSurvey(submissionData);
+        addDoc(surveysColRef, submissionData)
+          .then(async () => {
+            await submitSurvey(submissionData);
 
-        toast({
-            title: 'Survei Terkirim!',
-            description: 'Terima kasih atas partisipasi Anda.',
-        });
-        setIsSubmitted(true);
+            toast({
+                title: 'Survei Terkirim!',
+                description: 'Terima kasih atas partisipasi Anda.',
+            });
+            setIsSubmitted(true);
+            setIsSubmitting(false);
+          })
+          .catch((serverError) => {
+              const permissionError = new FirestorePermissionError({
+                path: surveysColRef.path,
+                operation: 'create',
+                requestResourceData: submissionData,
+              });
+              errorEmitter.emit('permission-error', permissionError);
+              
+              // Also show a toast to the user
+              toast({
+                  variant: 'destructive',
+                  title: 'Gagal Mengirim',
+                  description: 'Terjadi kesalahan saat menyimpan data. Silakan coba lagi.',
+              });
+              setIsSubmitting(false);
+          });
 
     } catch (error) {
-        console.error('Error submitting survey: ', error);
+        // This will catch errors from signInAnonymously or data preparation
+        console.error('Error during submission preparation: ', error);
         toast({
             variant: 'destructive',
             title: 'Gagal Mengirim',
-            description: 'Terjadi kesalahan saat menyimpan data. Silakan coba lagi.',
+            description: 'Terjadi kesalahan sebelum menyimpan data. Silakan coba lagi.',
         });
-    } finally {
         setIsSubmitting(false);
     }
   };
