@@ -18,7 +18,7 @@ export default function Home() {
         </CardContent>
       </Card>
       <footer className="mt-8 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} SekolahDigital. All rights reserved.</p>
+        <p>&copy; BPMP Provinsi Kepulauan Riau 2025</p>
       </footer>
     </div>
   );
