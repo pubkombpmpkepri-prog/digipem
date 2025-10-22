@@ -26,6 +26,8 @@ export default function LoginPage() {
   // to prevent confusion.
   useEffect(() => {
     if (!isUserLoading && user) {
+      // Check if the user is already on the admin page to avoid loops
+      // Or just redirect to home and let them click the admin link
       router.replace('/');
     }
   }, [user, isUserLoading, router]);
@@ -45,8 +47,8 @@ export default function LoginPage() {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // After successful sign-in, the user will be redirected to the admin page
-      // by the AdminLayout if they navigate there. We can also force it here.
+      // After successful sign-in, redirect to the admin page.
+      // The AdminLayout will then take over to verify admin claims.
       router.push('/admin');
     } catch (error) {
       console.error('Error signing in: ', error);
