@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client';
+import { db } from '@/lib/firebase/server';
 import { revalidatePath } from 'next/cache';
 
 const biodataSchema = z.object({

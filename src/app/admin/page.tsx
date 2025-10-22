@@ -1,7 +1,29 @@
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { db } from '@/lib/firebase/client'; // Use client for RSC, it gets configured once
+import { collection, getDocs, orderBy, query } from 'firebase-admin/firestore';
+import { db } from '@/lib/firebase/server'; // Use server for RSC
 import { SurveyDocument, SurveySubmission } from '@/types/survey';
 import DashboardClient from '@/components/dashboard/dashboard-client';
+import { Timestamp } from 'firebase-admin/firestore';
+
+// Helper to convert Firestore Timestamps to serializable strings in a deeply nested object
+function convertTimestamps<T>(obj: T): T {
+  if (obj instanceof Timestamp) {
+    return new Date(obj.toMillis()) as any;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(convertTimestamps) as any;
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const newObj: { [key: string]: any } = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = convertTimestamps((obj as any)[key]);
+      }
+    }
+    return newObj as T;
+  }
+  return obj;
+}
+
 
 async function getSurveyData(): Promise<SurveyDocument[]> {
   try {
@@ -15,13 +37,9 @@ async function getSurveyData(): Promise<SurveyDocument[]> {
         ...data,
       };
     });
-    return surveyList;
+     // Convert Firestore Timestamps to Dates, which are serializable
+    return JSON.parse(JSON.stringify(convertTimestamps(surveyList)));
   } catch (error) {
-    // In a real app, you'd want to handle this more gracefully.
-    // For this example, we'll log the error and return an empty array.
-    // This could happen if Firestore rules are not set up correctly or
-    // if the admin user is not properly authenticated on the server-side context (which is complex with client-side auth flow).
-    // The client-side guard in layout.tsx is the primary protection here.
     console.error("Error fetching survey data:", error);
     return [];
   }
