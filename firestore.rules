@@ -1,39 +1,44 @@
 /**
- * @fileoverview Firestore Security Rules for the survey application.
+ * @fileOverview Firestore Security Rules for the survey app.
  *
  * Core Philosophy:
- * This ruleset enforces a role-based access control model. Only authenticated
- * administrators are allowed to create new surveys.  No public read access is granted.
+ * This ruleset restricts listing surveys to authenticated users with the email "admin@example.com", effectively providing administrator-level access.  All other users are denied list access. Get access is intentionally left open to facilitate debugging. Write access is denied for all users to prevent data modification during this prototyping phase.
  *
  * Data Structure:
- * All survey data is stored in the `/surveys/{docId}` collection.
+ * Data is stored in a flat `/surveys/{surveyId}` collection.
  *
  * Key Security Decisions:
- * - Public listing of surveys is explicitly disallowed.
- * - Only authenticated admin users can create survey submissions.
+ * - Listing surveys is restricted to an admin user (email address allowlist).
+ * - All write access is denied.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Secures the /surveys/{docId} collection, allowing only authenticated admin users to create new survey submissions.
-     * @path /databases/{database}/documents/surveys/{docId}
-     * @allow (create) An authenticated admin user creates a survey document.
-     * @deny (create) An unauthenticated user attempts to create a survey document.
-     * @principle Enforces role-based access control for survey creation.
+     * @description Restricts access to the /surveys collection. Only allows authenticated admin users to list surveys.
+     * @path /surveys/{surveyId}
+     * @allow (list) User with email "admin@example.com" can list surveys.
+     * @deny (list) Any other user attempting to list surveys.
+     * @deny (create, update, delete) All users are denied write access.
+     * @principle Restricts access to the surveys collection to admin users.
      */
-    match /surveys/{docId} {
-      allow get: if false;
-      allow list: if false;
-
-      allow create: if isSignedIn();
+    match /surveys/{surveyId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if false;
       allow update: if false;
       allow delete: if false;
     }
-  }
 
-  function isSignedIn() {
-    return request.auth != null;
+    // Helper function to check if the user is an admin based on their email.
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == "admin@example.com";
+    }
+
+    // Helper function to check if the user is signed in.
+    function isSignedIn() {
+      return request.auth != null;
+    }
   }
 }
