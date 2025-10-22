@@ -24,7 +24,7 @@ export default function StepQuestions() {
         <CardHeader>
             <CardTitle className="flex items-center gap-2 font-headline text-2xl text-primary">
                 <HelpCircle />
-                Langkah 2: Pertanyaan Survei
+                Pertanyaan Survei
             </CardTitle>
             <CardDescription>Pilih salah satu opsi yang paling sesuai dengan kondisi di sekolah Anda.</CardDescription>
         </CardHeader>

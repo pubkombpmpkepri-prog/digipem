@@ -43,7 +43,7 @@ export default function StepSummary({ answers, calculateFinalLevel }: StepSummar
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-headline text-2xl text-primary">
             <CheckCircle />
-            Langkah 3: Simpulan Akhir
+            Simpulan Akhir
         </CardTitle>
         <CardDescription>
           Berikut adalah hasil analisis otomatis berdasarkan jawaban Anda.

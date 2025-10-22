@@ -21,7 +21,7 @@ export default function StepBiodata() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-headline text-2xl text-primary">
             <User />
-            Langkah 1: Biodata Responden
+            Biodata Responden
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
