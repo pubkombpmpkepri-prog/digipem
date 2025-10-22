@@ -6,21 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-async function userIsAdmin(user: any): Promise<boolean> {
-  if (!user) return false;
-  try {
-    const idTokenResult = await user.getIdTokenResult(true); // Force refresh
-    return !!idTokenResult.claims.admin;
-  } catch (error) {
-    console.error("Error getting ID token result:", error);
-    return false;
-  }
-}
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LoginPage() {
   const { user, isUserLoading } = useUser();
@@ -31,13 +21,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  // The AdminLayout will handle redirection for logged-in admins.
+  // This useEffect will redirect any logged-in NON-admin user away from the login page
+  // to prevent confusion.
   useEffect(() => {
     if (!isUserLoading && user) {
-        userIsAdmin(user).then(isAdmin => {
-            if (isAdmin) {
-                router.replace('/admin');
-            }
-        });
+      router.replace('/');
     }
   }, [user, isUserLoading, router]);
 
@@ -56,8 +45,9 @@ export default function LoginPage() {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // After successful sign-in, the useUser hook will update,
-      // and the useEffect will handle redirection if the user is an admin.
+      // After successful sign-in, the user will be redirected to the admin page
+      // by the AdminLayout if they navigate there. We can also force it here.
+      router.push('/admin');
     } catch (error) {
       console.error('Error signing in: ', error);
       toast({
@@ -70,23 +60,19 @@ export default function LoginPage() {
     }
   };
   
-  if (isUserLoading) {
-    return <div className="flex h-[80vh] items-center justify-center">Memuat...</div>;
-  }
-  
-  // If user is logged in but not an admin, show a message and options.
-  if (user) {
+  if (isUserLoading || user) {
     return (
-      <div className="flex h-[80vh] flex-col items-center justify-center text-center">
-        <Card className="w-full max-w-sm p-6">
-            <CardTitle>Anda Sudah Masuk</CardTitle>
-            <CardDescription className="mt-2">
-                Anda sudah masuk sebagai {user.email}. <br/>
-                Jika akun ini bukan admin, silakan keluar dan coba lagi dengan akun admin.
-            </CardDescription>
-            <Button variant="outline" className="mt-4" onClick={() => auth && signOut(auth)}>Keluar</Button>
-        </Card>
-      </div>
+        <div className="flex h-[80vh] items-center justify-center">
+            <div className="w-full max-w-sm space-y-4">
+                <Skeleton className="h-10 w-3/4 mx-auto"/>
+                <Skeleton className="h-8 w-full mx-auto"/>
+                <div className="space-y-4 pt-4">
+                    <Skeleton className="h-12 w-full"/>
+                    <Skeleton className="h-12 w-full"/>
+                    <Skeleton className="h-12 w-full"/>
+                </div>
+            </div>
+        </div>
     );
   }
 
