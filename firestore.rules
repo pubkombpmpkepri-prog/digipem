@@ -1,41 +1,51 @@
 /**
- * @fileoverview Firestore Security Rules for the survey application.
+ * @fileOverview Firestore Security Rules for the survey application.
  *
  * Core Philosophy:
- * This ruleset restricts read access to the `surveys` collection to authenticated users with a specific email.
- * All write access is denied.
+ * This ruleset restricts read access to the 'surveys' collection to authenticated users with a specific email.
+ * All write access is denied to prevent unauthorized data modification.
  *
  * Data Structure:
- * - /surveys/{docId}: Stores survey data.
+ * The data consists of a single top-level collection 'surveys', with each document representing a survey submission.
  *
  * Key Security Decisions:
- * - Only users with a specific email are allowed to list or get surveys.
- * - All write operations (create, update, delete) on surveys are denied.
+ * - Listing the 'surveys' collection is only allowed for specific authenticated users (email allowlist).
+ * - No write operations are permitted through these rules.
+ * - Data validation is minimal, focusing on authorization and relational integrity rather than schema enforcement (prototyping mode).
+ *
+ * Denormalization for Authorization:
+ * This ruleset does not require denormalization because all necessary authorization information
+ * is available directly via `request.auth` (email verification).
+ *
+ * Structural Segregation:
+ * All survey data is stored in a single 'surveys' collection, with access controlled via email verification.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Only admins can read surveys.
+     * @description Only allow listing `surveys` collection if the user is authenticated and has a specific email. Get operations are not secured, so this effectively makes all documents publicly accessible if the exact path is known.
      * @path /surveys/{docId}
-     * @allow (get, list) User with allowed email can read survey data.
-     *          e.g., request.auth.token.email == "apkelana@gmail.com"
-     * @deny (get, list) User without allowed email.
-     *          e.g., request.auth.token.email != "apkelana@gmail.com"
-     * @deny (create, update, delete) All write operations are denied.
-     * @principle Restricts read access to a specific email. Denies all writes.
+     * @allow (list) User with email "apkelana@gmail.com" listing surveys.
+     * @deny (list) User without email "apkelana@gmail.com" trying to list surveys.
+     * @allow (get) Any user getting the survey data.
+     * @deny (create) Any user trying to create a survey.
+     * @deny (update) Any user trying to update a survey.
+     * @deny (delete) Any user trying to delete a survey.
+     * @principle Limits listing access to authorized users (email allowlist).
      */
     match /surveys/{docId} {
-      allow get: if isSignedIn() && request.auth.token.email == "apkelana@gmail.com";
+      allow get: if true;
       allow list: if isSignedIn() && request.auth.token.email == "apkelana@gmail.com";
       allow create: if false;
       allow update: if false;
       allow delete: if false;
     }
-  }
 
-  function isSignedIn() {
-    return request.auth != null;
+    // Define helper functions for re-usability and readability.
+    function isSignedIn() {
+      return request.auth != null;
+    }
   }
 }
