@@ -1,52 +1,39 @@
 /**
- * @fileoverview Firestore Security Rules for the Survey App.
+ * @fileoverview Firestore Security Rules for the survey application.
  *
  * Core Philosophy:
- * This ruleset enforces a role-based access control model, specifically using an email allowlist, for the 'surveys' collection.
- * Only authenticated users with emails present in the allowlist can create, read, update, or delete survey documents.
+ * This ruleset enforces a role-based access control model. Only authenticated
+ * administrators are allowed to create new surveys.  No public read access is granted.
  *
  * Data Structure:
- * All survey data is stored in a flat `surveys` collection at the root level.
+ * All survey data is stored in the `/surveys/{docId}` collection.
  *
  * Key Security Decisions:
- * - Surveys are only accessible to members of the email allowlist.
- * - Data validation focuses on authorization-critical fields only, not on the entire schema.
- * - The rules strictly prevent any access to other users.
+ * - Public listing of surveys is explicitly disallowed.
+ * - Only authenticated admin users can create survey submissions.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to the 'surveys' collection. Only users in the email allowlist can create, read, update or delete surveys.
+     * @description Secures the /surveys/{docId} collection, allowing only authenticated admin users to create new survey submissions.
      * @path /databases/{database}/documents/surveys/{docId}
-     * @allow (create) - Authenticated user with email apkelana@gmail.com can create a survey document.
-     * @deny (create) - Authenticated user with email not in the allowlist cannot create a survey document.
-     * @allow (get) - Authenticated user with email apkelana@gmail.com can get a survey document.
-     * @deny (get) - Authenticated user with email not in the allowlist cannot get a survey document.
-     * @allow (list) - Authenticated user with email apkelana@gmail.com can list survey documents.
-     * @deny (list) - Authenticated user with email not in the allowlist cannot list survey documents.
-     * @allow (update) - Authenticated user with email apkelana@gmail.com can update a survey document.
-     * @deny (update) - Authenticated user with email not in the allowlist cannot update a survey document.
-     * @allow (delete) - Authenticated user with email apkelana@gmail.com can delete a survey document.
-     * @deny (delete) - Authenticated user with email not in the allowlist cannot delete a survey document.
-     * @principle Enforces role-based access control using an email allowlist for all survey operations.
+     * @allow (create) An authenticated admin user creates a survey document.
+     * @deny (create) An unauthenticated user attempts to create a survey document.
+     * @principle Enforces role-based access control for survey creation.
      */
     match /surveys/{docId} {
-      allow get: if isSignedIn() && isAllowedEmail(request.auth.token.email);
-      allow list: if isSignedIn() && isAllowedEmail(request.auth.token.email);
-      allow create: if isSignedIn() && isAllowedEmail(request.auth.token.email);
-      allow update: if isSignedIn() && isAllowedEmail(request.auth.token.email) && resource != null;
-      allow delete: if isSignedIn() && isAllowedEmail(request.auth.token.email) && resource != null;
-    }
+      allow get: if false;
+      allow list: if false;
 
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
+      allow create: if isSignedIn();
+      allow update: if false;
+      allow delete: if false;
     }
+  }
 
-    function isAllowedEmail(email) {
-        return email == 'apkelana@gmail.com';
-    }
+  function isSignedIn() {
+    return request.auth != null;
   }
 }
