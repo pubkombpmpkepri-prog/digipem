@@ -1,51 +1,53 @@
 /**
- * @fileoverview Firestore Security Rules for the survey application.
+ * @fileOverview Firestore Security Rules for the Survey application.
  *
  * Core Philosophy:
- * This ruleset enforces a role-based access control model, specifically an admin-only access for reading surveys data.
+ * This ruleset enforces a role-based security model where only authenticated admins are allowed to read surveys
+ * while all users (signed in or not) are allowed to create surveys.
  *
  * Data Structure:
- * All survey data is stored in the top-level `/surveys/{docId}` collection.
+ * All survey data is stored in the top-level `/surveys/{surveyId}` collection.
  *
  * Key Security Decisions:
- * - Only admins are authorized to read survey data (get, list).
- * - Any authenticated user can create survey data.
- * - Survey updates or deletes are disallowed.
- *
- * Denormalization for Authorization: N/A.  No denormalization needed due to admin-based authorization.
- * Structural Segregation: N/A. Single collection.
+ * - No user listing is allowed.
+ * - Read access to surveys is restricted to authenticated admin users only.
+ * - Survey creation is allowed for all users (signed in or not).
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Grants read access to admins and allows any authenticated user to create survey documents. Updates and deletes are disallowed.
+     * @description Controls access to the /surveys/{surveyId} collection, restricting read access to authenticated admin users only
+     *   and allowing all users to create new survey documents.
      * @path /surveys/{docId}
-     * @allow (create) User with any valid auth can create survey data.
-     * @deny (get, list) Non-admin users cannot read survey data.
-     * @deny (update, delete) No user can update or delete survey data.
-     * @principle Restricts read access to admins while allowing any authenticated user to create survey documents.
+     * @allow (create) - Any user can create a survey document with valid data.
+     *   Example: An unauthenticated user can create a new survey.
+     * @deny (get, list) - Non-admin users cannot read survey data.
+     *   Example: A regular authenticated user attempts to read all surveys.
+     * @principle Enforces role-based access control for reads and allows open access for creates.
      */
-    match /surveys/{docId} {
-      // Admins can read.
-      allow get, list: if isAdmin();
+    match /surveys/{surveyId} {
+      // Anyone can create a survey
+      allow create: if true;
 
-      // Any authenticated user can create.
-      allow create: if isSignedIn();
+      // Only authenticated admins can read surveys
+      allow get: if isAdmin();
+      allow list: if isAdmin();
 
-      // No one can update or delete.
-      allow update, delete: if false;
+      // No updates or deletes allowed
+      allow update: if false;
+      allow delete: if false;
     }
 
-    // ---- Helper functions ----
+    // Helper function to check if the user is signed in
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Check if the user is in the allowed list of admin email addresses.
+    // Helper function to check if the user is an admin (based on email)
     function isAdmin() {
-      return isSignedIn() && (request.auth.token.email in ["admin@example.com"]);
+      return isSignedIn() && request.auth.token.email in ["admin@example.com"];
     }
   }
 }
